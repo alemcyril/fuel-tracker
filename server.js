@@ -19,13 +19,37 @@ function parseDate(dateStr) {
   return new Date(year, month - 1, day);
 }
 
+// Function to get CSV file path
+function getCsvFilePath() {
+  // Try different possible locations for the CSV file
+  const possiblePaths = [
+    path.join(__dirname, "data", "May 2025.csv"),
+    path.join(__dirname, "May 2025.csv"),
+    path.join(__dirname, "public", "data", "May 2025.csv"),
+  ];
+
+  for (const filePath of possiblePaths) {
+    if (fs.existsSync(filePath)) {
+      return filePath;
+    }
+  }
+  return null;
+}
+
 // API endpoint to fetch fuel data
 app.get("/api/fuel-prices", (req, res) => {
   const { town, page = 1, limit = 5 } = req.query;
   const results = [];
   let filteredResults = [];
 
-  fs.createReadStream("fuel_prices.csv")
+  const csvFilePath = getCsvFilePath();
+
+  if (!csvFilePath) {
+    console.error("CSV file not found in any of the expected locations");
+    return res.status(500).json({ error: "Fuel price data file not found" });
+  }
+
+  fs.createReadStream(csvFilePath)
     .pipe(csv())
     .on("data", (data) => results.push(data))
     .on("end", () => {
