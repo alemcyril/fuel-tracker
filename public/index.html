@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kenya Fuel Prices</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>Kenya Fuel Prices</h1>
+
+      <div class="filters">
+        <div class="search-box">
+          <input
+            type="text"
+            id="townSearch"
+            placeholder="Search by town..."
+            aria-label="Search by town"
+          />
+        </div>
+        <div class="entries-selector">
+          <label for="entriesPerPage">Show</label>
+          <select id="entriesPerPage" aria-label="Number of entries per page">
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+          </select>
+          <span>entries</span>
+        </div>
+      </div>
+
+      <div id="prices">Loading...</div>
+      <div class="pagination" id="pagination">
+        <button class="pagination-btn" id="prevPage" disabled>Previous</button>
+        <span id="pageInfo">Page 1</span>
+        <button class="pagination-btn" id="nextPage">Next</button>
+      </div>
+      <footer>
+        <div class="footer-content">
+          <div>Last updated: <span id="last-updated"></span></div>
+          <div class="data-source">
+            Data source:
+            <a
+              href="https://www.epra.go.ke/pump-prices"
+              target="_blank"
+              rel="noopener noreferrer"
+              >EPRA Kenya</a
+            >
+          </div>
+        </div>
+      </footer>
+    </div>
+    <script src="script.js"></script>
+  </body>
+</html>

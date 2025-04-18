@@ -1,0 +1,5 @@
+{
+  "watch": ["server.js", "data/*.csv"],
+  "ignore": ["public/*"],
+  "ext": "js,json,csv"
+}
