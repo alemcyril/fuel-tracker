@@ -97,7 +97,9 @@ async function fetchFuelPrices(page = 1) {
       ...(town && { town }),
     });
 
-    const response = await fetch(`/api/fuel-data?${params}`);
+    const response = await fetch(
+      `http://localhost:3000/api/fuel-data?${params}`
+    );
     const data = await response.json();
     updateUI(data);
   } catch (error) {

@@ -5,97 +5,64 @@ const cors = require("cors");
 const path = require("path");
 
 const app = express();
-const port = process.env.PORT || 3000;
+const PORT = 3000;
 
-// Enable CORS
 app.use(cors());
+app.use(express.static("public"));
 
-// Serve static files from the public directory
-app.use(express.static(path.join(__dirname, "public")));
-
-// Function to parse dates
-function parseDate(dateStr) {
+// Helper function to parse date
+const parseDate = (dateStr) => {
   const [day, month, year] = dateStr.split("/");
-  return new Date(year, month - 1, day);
-}
+  return new Date(`${year}-${month}-${day}`);
+};
 
-// Function to get CSV file path
-function getCsvFilePath() {
-  // Try different possible locations for the CSV file
-  const possiblePaths = [
-    path.join(__dirname, "data", "May 2025.csv"),
-    path.join(__dirname, "May 2025.csv"),
-    path.join(__dirname, "public", "data", "May 2025.csv"),
-  ];
-
-  for (const filePath of possiblePaths) {
-    if (fs.existsSync(filePath)) {
-      return filePath;
-    }
-  }
-  return null;
-}
-
-// API endpoint to fetch fuel data
-app.get("/api/fuel-prices", (req, res) => {
+app.get("/api/fuel-data", (req, res) => {
   const { town, page = 1, limit = 5 } = req.query;
   const results = [];
-  let filteredResults = [];
 
-  const csvFilePath = getCsvFilePath();
-
-  if (!csvFilePath) {
-    console.error("CSV file not found in any of the expected locations");
-    return res.status(500).json({ error: "Fuel price data file not found" });
-  }
-
-  fs.createReadStream(csvFilePath)
+  fs.createReadStream(path.join(__dirname, "data", "May 2025.csv"))
     .pipe(csv())
-    .on("data", (data) => results.push(data))
+    .on("data", (row) => {
+      // Apply town filter if provided
+      if (town && !row["Town"].toLowerCase().includes(town.toLowerCase()))
+        return;
+
+      results.push({
+        town: row["Town"],
+        fromDate: row["From (Date)"],
+        toDate: row["To (Date)"],
+        petrol: parseFloat(row["Super (PMS)"]),
+        diesel: parseFloat(row["Diesel (AGO)"]),
+        kerosene: parseFloat(row["Kerosene (IK)"]),
+      });
+    })
     .on("end", () => {
-      // Filter by town if search term is provided
-      if (town) {
-        filteredResults = results.filter((item) =>
-          item.Town.toLowerCase().includes(town.toLowerCase())
-        );
-      } else {
-        filteredResults = results;
-      }
-
       // Calculate pagination
-      const startIndex = (page - 1) * limit;
-      const endIndex = startIndex + parseInt(limit);
-      const paginatedResults = filteredResults.slice(startIndex, endIndex);
-
-      // Get the last updated date from the first record
-      const lastUpdated = results[0]
-        ? parseDate(results[0]["Date Updated"]).toLocaleDateString()
-        : "N/A";
+      const totalPages = Math.ceil(results.length / limit);
+      const currentPage = Math.min(Math.max(1, parseInt(page)), totalPages);
+      const start = (currentPage - 1) * limit;
+      const end = start + limit;
+      const paginatedResults = results.slice(start, end);
 
       res.json({
         data: paginatedResults,
-        total: filteredResults.length,
-        page: parseInt(page),
+        total: results.length,
+        page: currentPage,
         limit: parseInt(limit),
-        lastUpdated,
+        totalPages: totalPages,
+        updated: new Date().toLocaleDateString("en-KE", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }),
       });
     })
-    .on("error", (error) => {
-      console.error("Error reading CSV file:", error);
-      res.status(500).json({ error: "Error reading fuel price data" });
+    .on("error", (err) => {
+      console.error("Error reading CSV:", err);
+      res.status(500).json({ error: "Failed to read CSV file." });
     });
 });
 
-// Serve the main HTML file for all other routes
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+app.listen(PORT, () => {
+  console.log(`✅ Server running at http://localhost:${PORT}`);
 });
-
-// Start the server
-if (require.main === module) {
-  app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
-  });
-}
-
-module.exports = app;
